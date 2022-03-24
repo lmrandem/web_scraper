@@ -1,15 +1,9 @@
 from requests import request
-import argparse, sys
+import sys
 from bs4 import BeautifulSoup
 import re
 import json
 from os.path import exists
-
-
-# def init_args():
-#    parser = argparse.ArgumentParser()
-#    parser.add_argument('--file')
-#    return vars(parser.parse_args())
 
 
 def write_to_file(sentences, filename):
