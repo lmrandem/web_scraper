@@ -19,13 +19,15 @@ python -m pip install -r requirements.txt
 To run the script, use the following command:
 
 ```
-python main.py <base-url> <output>
+python main.py <base-url> <output> <paths-file> <key>
 ```
 
-The arguments `base-url` and `output` are required to run the script.
+The arguments `base-url`, `output`, `paths-file`, and `key` are required to run the script.
 
 - `base-url`: The URL that the web scraper will scrape from.
 - `output`: The name of the file that the scraped text will be written to.
+- `paths-file`: A JSON file containing paths to retrieve text from.
+- `key`: The key from the JSON file that points to the paths to use.
 
 There are also some optional arguments.
 
@@ -33,32 +35,37 @@ There are also some optional arguments.
 - `--min`: Specifies the minimum amount of words a sentence needs to be saved. Default value is 5.
 - `--max`: Specifies the maximum amount of words a sentence can have to be saved. Default value is 30.
 - `--limit`: Specifies the maximum numbers of sentences to retrieve from a text. Default value is 20.
-- `--paths`: Specifies paths from a website to scrape data from as space-separated list. If this argument is set, the specified paths will be appended to the `base-url`.
-- `--paths-file`: Specifies a file that contains a line-separated list of paths to be appended to the end of the `base-url`.
+- `--verbose`: Shows what the script is currently doing.
 
 ### An example
 
-To gather sentences from the paths `/about` and `/articles/123` on a website `example.com` and store them in a file `output.json`, the following command can be used:
+To gather sentences from the paths `/about` and `/articles/123` on a website `example.com` and store them in a file `output.json`, an input file is needed. Our `input.json` file looks like this:
 
-```
-python main.py example.com output.json --paths="/about /articles/123"
-```
-
-A file can also be used to specify paths. If you have a text file `paths.txt` that contains the following content:
-
-```
-/about
-/articles/123
-```
-
-You can use the following command:
-
-```
-python main.py example.com output.json --paths-file=paths.txt
+```json
+[
+  {
+    "item": "1",
+    "path": "/about"
+  },
+  {
+    "item": "2",
+    "path": "/articles/123"
+  }
+]
 ```
 
-If you want to only get sentences from inside elements with the class name `article-section`, the `class-name` argument can be used:
+The `item` is used an ID.
+
+To extract sentences from the paths, the following command can be used:
 
 ```
-python main.py example.com output.json --paths="/about /articles/123" --class-name=article-section
+python main.py example.com output.json input.json path
+```
+
+The first argument provided is `example.com`, which tells the script to use `example.com` as the base URL. The next argument tells the script to write to the file `output.json`. The third argument tells the script to read paths from `input.json`. And finally, the last arguments means that the script is going to use the `path` key from the JSON file.
+
+If you want to retrieve text only from a certain part of a website, the optional `--class-name` argument can be used to tell the script to only gather text from child elements of elements with the given class name. For example, if you only want to retrieve text from elements under the class "article", the command would look like this:
+
+```
+python main.py example.com output.json input.json path --class-name=article
 ```
