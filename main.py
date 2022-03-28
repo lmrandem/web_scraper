@@ -16,6 +16,13 @@ def init_args():
         help="The name of the output file that data is written to",
     )
     parser.add_argument(
+        "paths_file",
+        metavar="paths-file",
+        type=str,
+        help="A JSON file containing paths",
+    )
+    parser.add_argument("key", type=str, help="The key from the JSON file to use")
+    parser.add_argument(
         "--class-name", type=str, help="The class name to read text from"
     )
     parser.add_argument(
@@ -37,27 +44,29 @@ def init_args():
         help="The number of sentences that are retrieved",
     )
     parser.add_argument(
-        "--paths", type=str, help="List of space-separated paths to read from"
-    )
-    parser.add_argument(
-        "--paths-file",
-        # metavar="--paths-file",
-        type=str,
-        help="A file containing line-separated paths to read from",
+        "--verbose", type=bool, default=False, help="Shows details about the process"
     )
     return parser.parse_args()
 
 
-def write_to_file(texts, filename):
+def write_to_file(texts, filename, verbose=False):
     file_content = {}
     if exists(filename):
         file = open(filename)
         file_content = json.loads(file.read())
-    for sentences in texts:
-        key = f"Q{len(file_content.keys())}"
-        file_content[key] = sentences
+    for text in texts:
+        if verbose:
+            print(f"Adding {text['id']} to output")
+        key = text["id"]
+        file_content[key] = text["sentences"]
     with open(filename, "w", encoding="utf-8") as file:
+        if verbose:
+            print(
+                f'Writing {len(file_content.keys())} objects to output file "{filename}"...'
+            )
         json.dump(file_content, file, ensure_ascii=False)
+        if verbose:
+            print(f'Successfully wrote to file "{filename}"')
 
 
 def count_words(sentence):
@@ -72,7 +81,7 @@ def get_sentences(text, limit=None, min_words=None, max_words=None):
     pattern = r"([0-9]\. |[^.!?])*[.!?](\"|)"
     result = {"first": "", "rest": []}
     count = 0
-    for match in re.finditer(pattern, text):
+    for match in re.finditer(pattern, text["text"]):
         if limit is not None and count >= limit:
             break
         sentence = match.group(0).strip()
@@ -89,39 +98,23 @@ def get_sentences(text, limit=None, min_words=None, max_words=None):
     return result
 
 
-# def find_texts(url, paths, article_class):
-#     count = 0
-#     n_paths = len(paths)
-#     while count < n_paths:
-#         if paths:
-#             response = request(url=f"{url}{paths[count]}", method="GET")
-#         else:
-#             response = request(url=url, method="GET")
-#         soup = BeautifulSoup(response.text, features="html.parser")
-#         article = soup.find_all("div", {"class": article_class})
-#         article_text = ""
-#         for text in article:
-#             p_tags = text.findChildren("p", recursive=False)
-#             for p in p_tags:
-#                 article_text += p.get_text() + " "
-#         count += 1
-#     return article_text
+def get_id(item):
+    split_item = item.split("/")
+    return split_item[len(split_item) - 1]
 
 
-def get_paths(paths):
-    if paths:
-        return paths.split()
-    return []
-
-
-def read_paths(filename):
-    if filename:
-        file = open(filename, "r")
-        content = file.read()
-        file.close()
-        paths = content.strip().split("\n")
+def read_paths(filename, key):
+    paths = []
+    if not filename:
         return paths
-    return []
+    file = open(filename, "r")
+    content = json.loads(file.read())
+    file.close()
+    for item in content:
+        item_id = get_id(item["item"])
+        path = item[key]
+        paths.append({"id": item_id, "path": path})
+    return paths
 
 
 def get_text(url, article_class):
@@ -136,24 +129,42 @@ def get_text(url, article_class):
     return article_text
 
 
-def get_all_texts(base_url, paths, article_class):
+def get_all_texts(base_url, paths, article_class, verbose=False):
     texts = []
     for path in paths:
-        texts.append(get_text(base_url + path, article_class))
+        url = base_url + path["path"]
+        if verbose:
+            if article_class:
+                print(
+                    f"Retrieving text from {url} with the class name \"{article_class}\" ({path['id']})..."
+                )
+            else:
+                print(f"Retrieving text from {url} ({path['id']})...")
+        texts.append(
+            {
+                "id": path["id"],
+                "text": get_text(url, article_class),
+            }
+        )
+        if verbose:
+            print(f"Text retrieved from {url} ({path['id']})")
     return texts
 
 
 def get_and_process_sentences(
-    base_url, paths, article_class, limit, min_words, max_words
+    base_url, paths, article_class, limit, min_words, max_words, verbose=False
 ):
-    texts = []
     sentences = []
-    if paths:
-        texts = get_all_texts(base_url, paths, article_class)
-    else:
-        texts.append(get_text(base_url, article_class))
+    texts = get_all_texts(base_url, paths, article_class, verbose=verbose)
     for text in texts:
-        sentences.append(get_sentences(text, limit, min_words, max_words))
+        if verbose:
+            print(f"Finding sentences in {text['id']}...")
+        found_sentences = get_sentences(text, limit, min_words, max_words)
+        sentences.append({"id": text["id"], "sentences": found_sentences})
+        if verbose:
+            print(
+                f"Found requested sentences in {text['id']}: {len(found_sentences['rest']) + 1} sentence(s) found"
+            )
     return sentences
 
 
@@ -161,9 +172,9 @@ def main():
     args = init_args()
     base_url = args.base_url
     filename = args.output
-    paths = get_paths(args.paths)
-    paths += read_paths(args.paths_file)
+    paths = read_paths(args.paths_file, args.key)
     class_name = args.class_name
+    verbose = args.verbose
     sentences = get_and_process_sentences(
         base_url,
         paths,
@@ -171,8 +182,9 @@ def main():
         limit=args.limit,
         min_words=args.min,
         max_words=args.max,
+        verbose=verbose,
     )
-    write_to_file(sentences, filename)
+    write_to_file(sentences, filename, verbose=verbose)
 
 
 if __name__ == "__main__":
