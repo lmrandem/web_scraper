@@ -31,6 +31,7 @@ The arguments `base-url`, `output`, `paths-file`, and `key` are required to run 
 
 There are also some optional arguments.
 
+- `--element`: Specifies the element to read from.
 - `--class-name`: Specifies a class name to scrape sentences from.
 - `--min`: Specifies the minimum amount of words a sentence needs to be saved. Default value is 5.
 - `--max`: Specifies the maximum amount of words a sentence can have to be saved. Default value is 30.
@@ -64,8 +65,8 @@ python main.py example.com output.json input.json path
 
 The first argument provided is `example.com`, which tells the script to use `example.com` as the base URL. The next argument tells the script to write to the file `output.json`. The third argument tells the script to read paths from `input.json`. And finally, the last arguments means that the script is going to use the `path` key from the JSON file.
 
-If you want to retrieve text only from a certain part of a website, the optional `--class-name` argument can be used to tell the script to only gather text from child elements of elements with the given class name. For example, if you only want to retrieve text from elements under the class "article", the command would look like this:
+If you want to retrieve text only from a certain part of a website, the optional `--element` and `--class-name` arguments can be used to tell the script to only gather text from child elements of elements with the given class name. For example, if you only want to retrieve text from elements under the class "article", the command would look like this:
 
 ```
-python main.py example.com output.json input.json path --class-name=article
+python main.py example.com output.json input.json path --element=div --class-name=article
 ```

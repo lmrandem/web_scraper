@@ -174,7 +174,7 @@ def main():
     base_url = args.base_url
     filename = args.output
     paths = read_paths(args.paths_file, args.key)
-    element = args.element or "div"
+    element = args.element or "body"
     class_name = args.class_name
     verbose = args.verbose
     sentences = get_and_process_sentences(
