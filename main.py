@@ -22,6 +22,7 @@ def init_args():
         help="A JSON file containing paths",
     )
     parser.add_argument("key", type=str, help="The key from the JSON file to use")
+    parser.add_argument("--element", type=str, help="The HTML element to retrieve data from")
     parser.add_argument(
         "--class-name", type=str, help="The class name to read text from"
     )
@@ -117,10 +118,10 @@ def read_paths(filename, key):
     return paths
 
 
-def get_text(url, article_class):
+def get_text(url, element, class_name):
     response = request(url=url, method="GET")
     soup = BeautifulSoup(response.text, features="html.parser")
-    article = soup.find_all("div", {"class": article_class})
+    article = soup.find_all(element, {"class": class_name})
     article_text = ""
     for text in article:
         p_tags = text.findChildren("p", recursive=False)
@@ -129,21 +130,21 @@ def get_text(url, article_class):
     return article_text
 
 
-def get_all_texts(base_url, paths, article_class, verbose=False):
+def get_all_texts(base_url, paths, element, class_name, verbose=False):
     texts = []
     for path in paths:
         url = base_url + path["path"]
         if verbose:
-            if article_class:
+            if class_name:
                 print(
-                    f"Retrieving text from {url} with the class name \"{article_class}\" ({path['id']})..."
+                    f"Retrieving text from {url} with the class name \"{class_name}\" ({path['id']})..."
                 )
             else:
                 print(f"Retrieving text from {url} ({path['id']})...")
         texts.append(
             {
                 "id": path["id"],
-                "text": get_text(url, article_class),
+                "text": get_text(url, element, class_name),
             }
         )
         if verbose:
@@ -152,10 +153,10 @@ def get_all_texts(base_url, paths, article_class, verbose=False):
 
 
 def get_and_process_sentences(
-    base_url, paths, article_class, limit, min_words, max_words, verbose=False
+    base_url, paths, element, class_name, limit, min_words, max_words, verbose=False
 ):
     sentences = []
-    texts = get_all_texts(base_url, paths, article_class, verbose=verbose)
+    texts = get_all_texts(base_url, paths, element, class_name, verbose=verbose)
     for text in texts:
         if verbose:
             print(f"Finding sentences in {text['id']}...")
@@ -173,12 +174,14 @@ def main():
     base_url = args.base_url
     filename = args.output
     paths = read_paths(args.paths_file, args.key)
+    element = args.element or "div"
     class_name = args.class_name
     verbose = args.verbose
     sentences = get_and_process_sentences(
         base_url,
         paths,
-        class_name,
+        element,
+        class_name=class_name,
         limit=args.limit,
         min_words=args.min,
         max_words=args.max,
