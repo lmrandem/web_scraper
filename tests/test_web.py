@@ -10,7 +10,7 @@ class TestWebScrape(unittest.TestCase):
     # self.parser = init_args()
 
     def test_getAndProcessTwoSentences(self):
-        with patch("sys.argv", ["", "https://snl.no/", "out.json", "query1.json", "snl"]):
+        with patch("sys.argv", ["", "https://snl.no/", "out.json", "tests/query1.json", "snl"]):
             args = init_args()
             paths = read_paths(args.paths_file, args.key)
             self.test = get_and_process_sentences(args.base_url,
