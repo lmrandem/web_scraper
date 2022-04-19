@@ -38,6 +38,13 @@ There are also some optional arguments.
 - `--limit`: Specifies the maximum numbers of sentences to retrieve from a text. Default value is 20.
 - `--verbose`: Shows what the script is currently doing.
 
+### Lexicon overview
+| Path      | Base URL                       |   Note 
+|---------------|--------------------------------| --- |
+| `snl`         | https://snl.no/                | --element=div --class-name=article-text
+| `dsd`         | https://denstoredanske.lex.dk/ | --element=div --class-name=article-text       
+| `ne`          | https://www.ne.se/             | --element=article --class-name=article
+
 ### An example
 
 To gather sentences from the paths `/about` and `/articles/123` on a website `example.com` and store them in a file `output.json`, an input file is needed. Our `input.json` file looks like this:
